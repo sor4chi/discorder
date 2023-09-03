@@ -13,8 +13,6 @@ use yaml_rust::{Yaml, YamlLoader};
 static CONFIG_DEFAULT_PATH: &str = "./discorder.yaml";
 
 /// A cli tool for sending text or file to Discord Webhook
-/// discorder --webhook https://discord.com/api/webhooks/1234567890/ABCDEFGHIJKL --text "Hello, World!"
-/// discorder --webhook https://discord.com/api/webhooks/1234567890/ABCDEFGHIJKL --file ./message.txt
 #[derive(Parser)]
 struct Args {
     /// Discord Webhook URL
