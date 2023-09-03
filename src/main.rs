@@ -8,8 +8,9 @@ use std::{
 use clap::Parser;
 use reqwest::blocking::multipart::{Form, Part};
 use reqwest::blocking::Client;
+use yaml_rust::{Yaml, YamlLoader};
 
-static CONFIG_DEFAULT_PATH: &str = "./discorder.toml";
+static CONFIG_DEFAULT_PATH: &str = "./discorder.yaml";
 
 /// A cli tool for sending text or file to Discord Webhook
 /// discorder --webhook https://discord.com/api/webhooks/1234567890/ABCDEFGHIJKL --text "Hello, World!"
@@ -30,15 +31,15 @@ struct Args {
     config: String,
 }
 
-fn load_config(path: &str) -> Result<Option<toml::Value>, Box<dyn std::error::Error>> {
+fn load_config(path: &str) -> Result<Option<Yaml>, Box<dyn std::error::Error>> {
     let mut file = match File::open(path) {
         Ok(file) => file,
         Err(_) => return Ok(None),
     };
     let mut buf = String::new();
     file.read_to_string(&mut buf)?;
-    let config = toml::from_str(&buf)?;
-    Ok(config)
+    let docs = YamlLoader::load_from_str(&buf)?;
+    Ok(docs.first().cloned())
 }
 
 fn main() {
