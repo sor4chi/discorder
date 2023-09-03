@@ -1,5 +1,9 @@
-use std::io;
-use std::{collections::HashMap, fs::File, io::Read};
+use std::path::Path;
+use std::{
+    collections::HashMap,
+    fs::File,
+    io::{self, Read},
+};
 
 use clap::Parser;
 use reqwest::blocking::multipart::{Form, Part};
@@ -26,8 +30,11 @@ struct Args {
     config: String,
 }
 
-fn load_config(path: &str) -> Result<toml::Value, Box<dyn std::error::Error>> {
-    let mut file = File::open(path)?;
+fn load_config(path: &str) -> Result<Option<toml::Value>, Box<dyn std::error::Error>> {
+    let mut file = match File::open(path) {
+        Ok(file) => file,
+        Err(_) => return Ok(None),
+    };
     let mut buf = String::new();
     file.read_to_string(&mut buf)?;
     let config = toml::from_str(&buf)?;
@@ -35,34 +42,41 @@ fn load_config(path: &str) -> Result<toml::Value, Box<dyn std::error::Error>> {
 }
 
 fn main() {
-    let args = Args::parse();
+    let mut args = Args::parse();
 
     let config = load_config(&args.config).unwrap();
-    let webhook = config["webhook"].as_str().map(|s| s.to_owned());
-    let text = config["text"].as_str().map(|s| s.to_owned());
-    let file = config["file"].as_str().map(|s| s.to_owned());
+    if let Some(config) = config {
+        let webhook = config["webhook"].as_str().map(|s| s.to_owned());
+        let text = config["text"].as_str().map(|s| s.to_owned());
+        let file = config["file"].as_str().map(|s| s.to_owned());
 
-    let args = Args {
-        webhook: args.webhook.or(webhook),
-        text: args.text.or(text),
-        file: args.file.or(file),
-        config: args.config,
-    };
-
-    match (args.text, args.file) {
-        (Some(text), None) => send_text_to_discord(&args.webhook.unwrap(), &text).unwrap(),
-        (None, Some(file)) => send_file_to_discord(&args.webhook.unwrap(), &file).unwrap(),
-        (None, None) => send_stdin_to_discord(&args.webhook.unwrap()).unwrap(),
-        _ => println!("Please specify text or file."),
+        args = Args {
+            webhook: args.webhook.or(webhook),
+            text: args.text.or(text),
+            file: args.file.or(file),
+            config: args.config,
+        };
     }
-}
 
-fn send_stdin_to_discord(webhook: &str) -> Result<(), Box<dyn std::error::Error>> {
-    let mut buf = String::new();
-    io::stdin().read_to_string(&mut buf).unwrap();
-    send_file_to_discord(webhook, &buf).unwrap();
-
-    Ok(())
+    match (args.webhook, args.text, args.file) {
+        (Some(webhook), Some(text), None) => send_text_to_discord(&webhook, &text).unwrap(),
+        (Some(webhook), None, Some(file)) => {
+            let file_name = Path::new(&file).file_name().unwrap().to_str().unwrap();
+            let file_bytes = std::fs::read(&file).unwrap();
+            send_file_to_discord(&webhook, file_bytes, file_name).unwrap()
+        }
+        (Some(webhook), None, None) => {
+            let mut buf = String::new();
+            io::stdin().read_to_string(&mut buf).unwrap();
+            send_text_to_discord(&webhook, &buf).unwrap()
+        }
+        (None, _, _) => {
+            println!("Please input webhook url");
+        }
+        _ => {
+            println!("Please input text or file path, or you can use stdin");
+        }
+    }
 }
 
 fn send_text_to_discord(webhook: &str, text: &str) -> Result<(), Box<dyn std::error::Error>> {
@@ -81,18 +95,19 @@ fn send_text_to_discord(webhook: &str, text: &str) -> Result<(), Box<dyn std::er
     Ok(())
 }
 
-fn send_file_to_discord(webhook: &str, file_path: &str) -> Result<(), Box<dyn std::error::Error>> {
+fn send_file_to_discord(
+    webhook: &str,
+    file_bytes: Vec<u8>,
+    file_name: &str,
+) -> Result<(), Box<dyn std::error::Error>> {
     let client = Client::new();
-    let mut file = File::open(file_path)?;
-    let mut buf = Vec::new();
-    file.read_to_end(&mut buf)?;
 
     let form = Form::new();
-    let file_name = file_path.split('/').last().unwrap().to_owned();
+    let part = Part::bytes(file_bytes).file_name(file_name.to_owned());
 
     let res = client
         .post(webhook)
-        .multipart(form.part("file", Part::bytes(buf).file_name(file_name)))
+        .multipart(form.part("file", part))
         .send()?;
 
     if res.status().is_success() {
