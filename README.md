@@ -24,7 +24,7 @@ All [releases](
 ```sh
 $ wget <URL of the release asset>
 $ unzip <Downloaded file>
-$ sudo install <Unzipped file> /usr/local/bin/discorder
+$ sudo install <Unzipped file> /usr/local/bin
 ```
 
 ## Usage
