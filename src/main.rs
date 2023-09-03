@@ -67,7 +67,7 @@ fn main() {
         (Some(webhook), None, None) => {
             let mut buf = String::new();
             io::stdin().read_to_string(&mut buf).unwrap();
-            send_text_to_discord(&webhook, &buf).unwrap()
+            send_file_to_discord(&webhook, buf.into_bytes(), "stdin.txt").unwrap()
         }
         (None, _, _) => {
             println!("Please input webhook url");
