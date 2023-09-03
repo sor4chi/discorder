@@ -1,3 +1,4 @@
+use std::io;
 use std::{collections::HashMap, fs::File, io::Read};
 
 use clap::Parser;
@@ -51,8 +52,17 @@ fn main() {
     match (args.text, args.file) {
         (Some(text), None) => send_text_to_discord(&args.webhook.unwrap(), &text).unwrap(),
         (None, Some(file)) => send_file_to_discord(&args.webhook.unwrap(), &file).unwrap(),
+        (None, None) => send_stdin_to_discord(&args.webhook.unwrap()).unwrap(),
         _ => println!("Please specify text or file."),
     }
+}
+
+fn send_stdin_to_discord(webhook: &str) -> Result<(), Box<dyn std::error::Error>> {
+    let mut buf = String::new();
+    io::stdin().read_to_string(&mut buf).unwrap();
+    send_file_to_discord(webhook, &buf).unwrap();
+
+    Ok(())
 }
 
 fn send_text_to_discord(webhook: &str, text: &str) -> Result<(), Box<dyn std::error::Error>> {
