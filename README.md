@@ -49,3 +49,11 @@ $ cat ./hello.txt | discorder -w https://discordapp.com/api/webhooks/xxx/yyy
 ```yaml
 webhook: https://discordapp.com/api/webhooks/xxx/yyy
 ```
+
+Config load order is:
+
+1. `--config` option
+2. `./discorder.yaml`
+3. `./discorder.yml`
+4. `~/.config/discorder/config.yaml`
+5. `~/.config/discorder/config.yaml`

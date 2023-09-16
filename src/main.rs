@@ -10,7 +10,12 @@ use reqwest::blocking::multipart::{Form, Part};
 use reqwest::blocking::Client;
 use yaml_rust::{Yaml, YamlLoader};
 
-static CONFIG_DEFAULT_PATH: &str = "./discorder.yaml";
+static CONFIG_DEFAULT_PATHS: [&str; 4] = [
+    "./discorder.yml",
+    "./discorder.yaml",
+    "~/.config/discorder/discorder.yml",
+    "~/.config/discorder/discorder.yaml",
+];
 
 /// A cli tool for sending text or file to Discord Webhook
 #[derive(Parser)]
@@ -25,11 +30,19 @@ struct Args {
     #[clap(short, long)]
     file: Option<String>,
     /// Config file path
-    #[clap(short, long, default_value = CONFIG_DEFAULT_PATH)]
-    config: String,
+    #[clap(short, long)]
+    config: Option<String>,
 }
 
-fn load_config(path: &str) -> Result<Option<Yaml>, Box<dyn std::error::Error>> {
+fn load_config(path: Option<String>) -> Result<Option<Yaml>, Box<dyn std::error::Error>> {
+    let path = path.unwrap_or_else(|| {
+        CONFIG_DEFAULT_PATHS
+            .iter()
+            .find(|path| Path::new(path).exists())
+            .unwrap_or(&CONFIG_DEFAULT_PATHS[0])
+            .to_owned()
+            .to_string()
+    });
     let mut file = match File::open(path) {
         Ok(file) => file,
         Err(_) => return Ok(None),
@@ -43,7 +56,7 @@ fn load_config(path: &str) -> Result<Option<Yaml>, Box<dyn std::error::Error>> {
 fn main() {
     let mut args = Args::parse();
 
-    let config = load_config(&args.config).unwrap();
+    let config = load_config(args.config.clone()).unwrap();
     if let Some(config) = config {
         let webhook = config["webhook"].as_str().map(|s| s.to_owned());
         let text = config["text"].as_str().map(|s| s.to_owned());
