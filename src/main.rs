@@ -19,6 +19,7 @@ static CONFIG_DEFAULT_PATHS: [&str; 4] = [
 
 /// A cli tool for sending text or file to Discord Webhook
 #[derive(Parser)]
+#[command(version)]
 struct Args {
     /// Discord Webhook URL
     #[clap(short, long)]
