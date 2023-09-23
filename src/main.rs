@@ -17,6 +17,8 @@ static CONFIG_DEFAULT_PATHS: [&str; 4] = [
     "~/.config/discorder/discorder.yaml",
 ];
 
+static CONFIG_PATH_ENV_KEY: &str = "DISCORDER_CONFIG_PATH";
+
 /// A cli tool for sending text or file to Discord Webhook
 #[derive(Parser)]
 #[command(version)]
@@ -51,6 +53,9 @@ fn load_config(path: Option<String>) -> Result<Option<Yaml>, Box<dyn std::error:
             .find(|path| Path::new(path).exists())
             .unwrap_or_else(|| "".to_owned())
     });
+    let path = std::env::var(CONFIG_PATH_ENV_KEY)
+        .map(|path| resolve_path(&path))
+        .unwrap_or(path);
     let mut file = match File::open(path) {
         Ok(file) => file,
         Err(_) => return Ok(None),
