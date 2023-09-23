@@ -56,5 +56,5 @@ Config load order is:
 1. `--config` option
 2. `./discorder.yaml`
 3. `./discorder.yml`
-4. `~/.config/discorder/config.yaml`
-5. `~/.config/discorder/config.yaml`
+4. `~/.config/discorder/discorder.yaml`
+5. `~/.config/discorder/discorder.yaml`
