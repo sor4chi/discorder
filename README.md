@@ -11,6 +11,7 @@ Options:
   -f, --file <FILE>        A file to send
   -c, --config <CONFIG>    Config file path [default: ./discorder.yaml]
   -h, --help               Print help
+  -V, --version            Print version
 ```
 
 ## Installation
